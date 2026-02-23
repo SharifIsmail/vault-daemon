@@ -31,10 +31,13 @@ cleanup() {
 
 trap cleanup SIGTERM SIGINT
 
-# Copy default loop.sh if missing
+# Copy default files if missing
 if [[ ! -f "$LOOP_SCRIPT" ]]; then
     echo "[supervisor] no loop.sh found, copying default template"
     cp "$DEFAULT_LOOP" "$LOOP_SCRIPT"
+fi
+if [[ ! -f /daemon/README.md ]]; then
+    cp /usr/local/bin/default-readme.md /daemon/README.md
 fi
 
 # Clean stale dotfiles

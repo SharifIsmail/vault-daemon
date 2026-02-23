@@ -12,6 +12,7 @@ RUN uv python install 3.14.3 \
 
 COPY supervisor.sh /usr/local/bin/supervisor.sh
 COPY default-loop.sh /usr/local/bin/default-loop.sh
+COPY default-readme.md /usr/local/bin/default-readme.md
 RUN chmod +x /usr/local/bin/supervisor.sh
 
 USER ubuntu
