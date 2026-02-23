@@ -55,4 +55,4 @@ docker logs -f vault-daemon
 
 ## How it works
 
-This folder is mounted at `/daemon` inside the `vault-daemon` container. A supervisor process runs `loop.sh` and watches it with inotify. On file change, it waits 10 seconds then sends SIGTERM to loop.sh only (not its children), and restarts it.
+This folder is mounted at `/daemon` inside the `vault-daemon` container. A supervisor process runs `loop.sh` and polls its content hash every 2 seconds. On change, it waits 10 seconds (for you to finish editing), then sends SIGTERM to loop.sh only (not its children), and restarts it.

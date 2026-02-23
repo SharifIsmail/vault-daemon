@@ -7,8 +7,13 @@ RELOAD_FLAG="/daemon/.reload"
 PID_FILE="/daemon/.loop.pid"
 RELOAD_TIMEOUT="${RELOAD_TIMEOUT:-10}"
 CRASH_DELAY="${CRASH_DELAY:-5}"
+POLL_INTERVAL="${POLL_INTERVAL:-2}"
 
 WATCHER_PID=""
+
+file_hash() {
+    md5sum "$1" 2>/dev/null | cut -d' ' -f1
+}
 
 cleanup() {
     echo "[supervisor] shutting down"
@@ -43,21 +48,27 @@ fi
 # Clean stale dotfiles
 rm -f "$RELOAD_FLAG" "$PID_FILE"
 
-# Start file watcher in background
+# Start file watcher in background (polls content hash)
 start_watcher() {
+    local last_hash
+    last_hash=$(file_hash "$LOOP_SCRIPT")
     while true; do
-        # Watch for modify and move_self (covers in-place writes and atomic save-then-rename)
-        inotifywait -qq -e modify -e move_self "$LOOP_SCRIPT" 2>/dev/null || true
-        echo "[supervisor] loop.sh changed, scheduling reload in ${RELOAD_TIMEOUT}s"
-        sleep "$RELOAD_TIMEOUT"
-        # Signal reload by writing flag and killing loop.sh
-        touch "$RELOAD_FLAG"
-        if [[ -f "$PID_FILE" ]]; then
-            local pid
-            pid=$(<"$PID_FILE")
-            if kill -0 "$pid" 2>/dev/null; then
-                echo "[supervisor] sending SIGTERM to loop.sh (pid $pid)"
-                kill -TERM "$pid" 2>/dev/null || true
+        sleep "$POLL_INTERVAL"
+        local current_hash
+        current_hash=$(file_hash "$LOOP_SCRIPT")
+        if [[ "$current_hash" != "$last_hash" ]]; then
+            echo "[supervisor] loop.sh changed, scheduling reload in ${RELOAD_TIMEOUT}s"
+            sleep "$RELOAD_TIMEOUT"
+            last_hash=$(file_hash "$LOOP_SCRIPT")
+            # Signal reload by writing flag and killing loop.sh
+            touch "$RELOAD_FLAG"
+            if [[ -f "$PID_FILE" ]]; then
+                local pid
+                pid=$(<"$PID_FILE")
+                if kill -0 "$pid" 2>/dev/null; then
+                    echo "[supervisor] sending SIGTERM to loop.sh (pid $pid)"
+                    kill -TERM "$pid" 2>/dev/null || true
+                fi
             fi
         fi
     done
