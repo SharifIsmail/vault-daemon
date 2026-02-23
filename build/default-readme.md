@@ -4,6 +4,8 @@ Edit `loop.sh` in Obsidian. It restarts automatically on save.
 
 ## Writing loop.sh
 
+Working directory: `/daemon` (this folder). Relative paths resolve here.
+
 Available tools: `bash`, `curl`, `jq`, `python` (3.14), `uv`, `uvx`
 
 Check for reload at the top of each iteration (otherwise a long `sleep` delays the restart):
