@@ -27,6 +27,24 @@ nohup some-long-task &
 
 `exit 0` stops the loop. Any other exit (or crash) restarts it after 5 seconds.
 
+## Example (the default loop.sh)
+
+```bash
+TICK_INTERVAL=60
+
+while true; do
+    [[ -f /daemon/.reload ]] && exit 1  # exit fast on reload
+
+    echo "[loop.sh] tick at $(date -Iseconds)"
+
+    # your automation here
+
+    sleep "$TICK_INTERVAL"
+done
+```
+
+The reload check goes first so edits take effect without waiting for `sleep` to finish. Everything between the check and `sleep` runs once per tick.
+
 ## Logs
 
 ```bash
