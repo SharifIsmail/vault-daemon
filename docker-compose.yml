@@ -1,0 +1,10 @@
+services:
+  vault-daemon:
+    build: ./build
+    image: vault-daemon:latest
+    container_name: vault-daemon
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    volumes:
+      - ${DAEMON_PATH}:/daemon
