@@ -1,50 +1,38 @@
 # Daemon
 
-This folder is mounted inside the `vault-daemon` container at `/daemon`. The container runs `loop.sh` continuously and watches it for changes.
+Edit `loop.sh` in Obsidian. It restarts automatically on save.
 
-## loop.sh
+## Writing loop.sh
 
-This is your automation script. Write whatever you want it to do — it runs in a `while true` loop. The container provides `bash`, `curl`, `jq`, `python` (3.14), `uv`, and `uvx`.
+Available tools: `bash`, `curl`, `jq`, `python` (3.14), `uv`, `uvx`
 
-### Editing
-
-Edit `loop.sh` directly in Obsidian. The container detects the change and restarts the script automatically (after a 10-second grace period).
-
-### Exit behavior
-
-| Scenario | What happens |
-|----------|-------------|
-| `exit 0` | Supervisor stops — container goes idle until restarted |
-| `exit 1` (or any non-zero) | Supervisor restarts loop.sh after 5 seconds |
-| File changed | Supervisor sends SIGTERM to loop.sh, then restarts it |
-
-### Reload check pattern
-
-Add this at the top of your loop iterations so the script exits promptly on reload instead of waiting for a long `sleep` to finish:
+Check for reload at the top of each iteration (otherwise a long `sleep` delays the restart):
 
 ```bash
 [[ -f /daemon/.reload ]] && exit 1
 ```
 
-### Background processes
-
-`kill` only targets loop.sh itself, not its children. If you launch something with `nohup`, it survives reloads:
-
-```bash
-nohup some-long-task &
-```
-
-### Python
-
-Use `uv run` or `uvx` for isolated Python execution without polluting the container:
+Use `uv run` / `uvx` for Python dependencies:
 
 ```bash
 uvx some-tool
 uv run --with requests python my_script.py
 ```
 
+Use `nohup` for anything that should survive a reload:
+
+```bash
+nohup some-long-task &
+```
+
+`exit 0` stops the loop. Any other exit (or crash) restarts it after 5 seconds.
+
 ## Logs
 
 ```bash
 docker logs -f vault-daemon
 ```
+
+## How it works
+
+This folder is mounted at `/daemon` inside the `vault-daemon` container. A supervisor process runs `loop.sh` and watches it with inotify. On file change, it waits 10 seconds then sends SIGTERM to loop.sh only (not its children), and restarts it.
